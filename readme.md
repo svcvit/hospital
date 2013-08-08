@@ -6,4 +6,4 @@
 
 ### 示例
 数据内容
-![网页数据](readme/excel.jpg)
+![网页数据](readme/data.jpg)
