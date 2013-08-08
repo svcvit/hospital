@@ -1,11 +1,10 @@
 __author__ = 'ron.liu'
 #encoding=utf-8
-import urllib,urllib2,bs4,cookielib,re,sqlite3,logging,sys
+import urllib2,bs4,re,sqlite3,sys
 # reload(sys)
 # sys.setdefaultencoding("utf-8")
 sqlite_conn = sqlite3.connect(r'hospital.db')
 sqlite_cursor = sqlite_conn.cursor()
-
 sql_desc = '''
 create table hospital (
     [tkid]            integer PRIMARY KEY autoincrement,
@@ -14,7 +13,7 @@ create table hospital (
     [url]          varchar (255),
     [createdate]      datetime default (datetime('now', 'localtime'))
 );
-'''
+''' #创建医院数据库
 sqlite_cursor.execute(sql_desc)
 
 sql_desc = '''
@@ -34,13 +33,10 @@ create table  hospital_message (
     [provinceurl]     varchar (255),
     [createdate]      datetime default (datetime('now', 'localtime'))
 );
-'''
+'''#创建医院详细信息数据库
 sqlite_cursor.execute(sql_desc)
 
-
 def get_province():
-    # sqlite_conn = sqlite3.connect('hospital.db')
-    # sqlite_cursor = sqlite_conn.cursor()
     provinceurl=r'http://www.a-hospital.com/w/%E5%85%A8%E5%9B%BD%E5%8C%BB%E9%99%A2%E5%88%97%E8%A1%A8'
     result=urllib2.urlopen(provinceurl,timeout=200).read()
     soup=bs4.BeautifulSoup(result)
@@ -69,14 +65,14 @@ def hospital_message(province,city,provinceurl):
         result=urllib2.urlopen(provinceurl,timeout=200).read()
         soup=bs4.BeautifulSoup(result)
         com=re.compile(r'点击医院名称进入相关条目可以阅读更多关于此医院的信息。.*?<h2>',re.S)
-        fix_html=re.findall(com,str(soup))[0][85:-4]
-        # fix_html=file('fix_html.html','r').read()    #测试用
+        fix_html=re.findall(com,str(soup))[0][85:-4]  #提取需要医院相关信息
+        # fix_html=file('fix_html.html','r').read()    #测试用，不用一直打开网页读数据
         soup2=bs4.BeautifulSoup(str(fix_html))
         s=soup2.contents[1].contents
         for item in s: #去掉\n
             if item!='\n':
                 item_soup=bs4.BeautifulSoup(str(item))
-                try:
+                try: #有一个医院数据格式和其它不一样
                     hospital=item_soup.li.b.a.string
                 except:
                     hospital=item_soup.li.b.string
@@ -89,7 +85,7 @@ def hospital_message(province,city,provinceurl):
                 fax=''
                 emailaddress=''
                 website=''
-                for message in other:
+                for message in other: #获取信息
                     message_soup=bs4.BeautifulSoup(str(message))
                     if message_soup.li.b.string==u'医院地址':
                         address=message_soup.li.contents[1][1:]
@@ -111,7 +107,7 @@ def hospital_message(province,city,provinceurl):
                 print hospital_message
                 sqlite_cursor.execute(hospital_message)
                 sqlite_conn.commit()
-    except:
+    except:#部分城市没有医院，打开页面404错误，用空白填充
         hospital=''
         address=''
         telphone=''
@@ -125,15 +121,5 @@ def hospital_message(province,city,provinceurl):
         print hospital_message
         sqlite_cursor.execute(hospital_message)
         sqlite_conn.commit()
-        #print hospital,address,telphone,level,key_departments,jingyinfangshi,fax,emailaddress,website
 
 get_province()
-
-
-
-
-# print hospial,other,len(other),'\n'
-#         a.append(item)
-# print len(a)
-#m=soup.findAll({'li' : True, 'b' : True},)
-#print m[1]
